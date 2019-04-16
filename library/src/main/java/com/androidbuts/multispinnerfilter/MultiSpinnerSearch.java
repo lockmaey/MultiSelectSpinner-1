@@ -8,8 +8,8 @@ import android.content.DialogInterface.OnCancelListener;
 import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.widget.AppCompatSpinner;
+import androidx.core.content.ContextCompat;
+import androidx.appcompat.widget.AppCompatSpinner;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
@@ -57,9 +57,10 @@ public class MultiSpinnerSearch extends AppCompatSpinner implements OnCancelList
     public String getHintText(){
        return this.spinnerTitle;
     }
-     public void setHintText(String hibtText){
+     public String setHintText(String hibtText){
        this.spinnerTitle = hibtText;
-    }
+         return hibtText;
+     }
     public MultiSpinnerSearch(Context arg0, AttributeSet arg1) {
         super(arg0, arg1);
         TypedArray a = arg0.obtainStyledAttributes(arg1, R.styleable.MultiSpinnerSearch);
