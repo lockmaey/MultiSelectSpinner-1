@@ -104,6 +104,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        searchMultiSpinnerUnlimited.setOrder(true);
+
         /***
          * -1 is no by default selection
          * 0 to length will select corresponding values
