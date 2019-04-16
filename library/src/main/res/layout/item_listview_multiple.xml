@@ -24,5 +24,18 @@
         android:text="Item Name"
         android:textAppearance="?android:attr/textAppearanceMedium" />
 
+    <TextView
+        android:id="@+id/alertOrderNo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:layout_toLeftOf="@+id/alertCheckbox"
+        android:layout_toRightOf="@id/alertCheckbox"
+        android:gravity="right"
+        android:text="0"
+        android:visibility="invisible"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+
 
 </RelativeLayout>

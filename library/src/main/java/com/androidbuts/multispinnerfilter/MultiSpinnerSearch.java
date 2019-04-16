@@ -1,15 +1,12 @@
 package com.androidbuts.multispinnerfilter;
 
+
 import android.annotation.SuppressLint;
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.DialogInterface.OnCancelListener;
 import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import androidx.core.content.ContextCompat;
-import androidx.appcompat.widget.AppCompatSpinner;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
@@ -26,11 +23,22 @@ import android.widget.Filterable;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import java.util.ArrayList;
-import java.util.List;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.AppCompatSpinner;
+import androidx.core.content.ContextCompat;
+import androidx.core.os.CancellationSignal;
 
-public class MultiSpinnerSearch extends AppCompatSpinner implements OnCancelListener{
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.ListIterator;
+
+public class MultiSpinnerSearch extends AppCompatSpinner implements CancellationSignal.OnCancelListener, DialogInterface.OnCancelListener {
     private static final String TAG = MultiSpinnerSearch.class.getSimpleName();
+    public static AlertDialog.Builder builder;
+    public static AlertDialog ad;
+    MyAdapter adapter;
     private List<KeyPairBoolData> items;
     private String defaultText = "";
     private String spinnerTitle = "";
@@ -38,29 +46,13 @@ public class MultiSpinnerSearch extends AppCompatSpinner implements OnCancelList
     private int limit = -1;
     private int selected = 0;
     private LimitExceedListener limitListener;
-    MyAdapter adapter;
-    public static AlertDialog.Builder builder;
-    public static AlertDialog ad;
     private boolean colorseparation = false;
-
-    public boolean isColorseparation() {
-        return colorseparation;
-    }
-
-    public void setColorseparation(boolean colorseparation) {
-        this.colorseparation = colorseparation;
-    }
+    private boolean isOrder = false;
 
     public MultiSpinnerSearch(Context context) {
         super(context);
     }
-    public String getHintText(){
-       return this.spinnerTitle;
-    }
-     public String setHintText(String hibtText){
-       this.spinnerTitle = hibtText;
-         return hibtText;
-     }
+
     public MultiSpinnerSearch(Context arg0, AttributeSet arg1) {
         super(arg0, arg1);
         TypedArray a = arg0.obtainStyledAttributes(arg1, R.styleable.MultiSpinnerSearch);
@@ -80,9 +72,30 @@ public class MultiSpinnerSearch extends AppCompatSpinner implements OnCancelList
         super(arg0, arg1, arg2);
     }
 
+    public boolean isColorseparation() {
+        return colorseparation;
+    }
+
+    public void setColorseparation(boolean colorseparation) {
+        this.colorseparation = colorseparation;
+    }
+
+    public String getHintText() {
+        return this.spinnerTitle;
+    }
+
+    public String setHintText(String hibtText) {
+        this.spinnerTitle = hibtText;
+        return hibtText;
+    }
+
     public void setLimit(int limit, LimitExceedListener listener) {
         this.limit = limit;
         this.limitListener = listener;
+    }
+
+    public void setOrder(boolean isOrder){
+        this.isOrder = isOrder;
     }
 
     public List<KeyPairBoolData> getSelectedItems() {
@@ -107,8 +120,6 @@ public class MultiSpinnerSearch extends AppCompatSpinner implements OnCancelList
 
     @Override
     public void onCancel(DialogInterface dialog) {
-        // refresh text on spinner
-
         StringBuilder spinnerBuffer = new StringBuilder();
 
         for (int i = 0; i < items.size(); i++) {
@@ -144,16 +155,16 @@ public class MultiSpinnerSearch extends AppCompatSpinner implements OnCancelList
         final View view = inflater.inflate(R.layout.alert_dialog_listview_search, null);
         builder.setView(view);
 
-        final ListView listView = (ListView) view.findViewById(R.id.alertSearchListView);
+        final ListView listView = view.findViewById(R.id.alertSearchListView);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         listView.setFastScrollEnabled(false);
         adapter = new MyAdapter(getContext(), items);
         listView.setAdapter(adapter);
 
-        final TextView emptyText = (TextView) view.findViewById(R.id.empty);
+        final TextView emptyText = view.findViewById(R.id.empty);
         listView.setEmptyView(emptyText);
 
-        final EditText editText = (EditText) view.findViewById(R.id.alertSearchEditText);
+        final EditText editText = view.findViewById(R.id.alertSearchEditText);
         editText.addTextChangedListener(new TextWatcher() {
 
             @Override
@@ -189,10 +200,8 @@ public class MultiSpinnerSearch extends AppCompatSpinner implements OnCancelList
     }
 
     public void setItems(List<KeyPairBoolData> items, int position, SpinnerListener listener) {
-
         this.items = items;
         this.listener = listener;
-
         StringBuilder spinnerBuffer = new StringBuilder();
 
         for (int i = 0; i < items.size(); i++) {
@@ -212,6 +221,11 @@ public class MultiSpinnerSearch extends AppCompatSpinner implements OnCancelList
             //listener.onItemsSelected(items);
             onCancel(null);
         }
+    }
+
+    @Override
+    public void onCancel() {
+
     }
 
     public interface LimitExceedListener {
@@ -245,11 +259,6 @@ public class MultiSpinnerSearch extends AppCompatSpinner implements OnCancelList
             return position;
         }
 
-        private class ViewHolder {
-            TextView textView;
-            CheckBox checkBox;
-        }
-
         @Override
         public View getView(final int position, View convertView, ViewGroup parent) {
             Log.i(TAG, "getView() enter");
@@ -258,17 +267,17 @@ public class MultiSpinnerSearch extends AppCompatSpinner implements OnCancelList
             if (convertView == null) {
                 holder = new ViewHolder();
                 convertView = inflater.inflate(R.layout.item_listview_multiple, parent, false);
-                holder.textView = (TextView) convertView.findViewById(R.id.alertTextView);
-                holder.checkBox = (CheckBox) convertView.findViewById(R.id.alertCheckbox);
-
+                holder.textView = convertView.findViewById(R.id.alertTextView);
+                holder.checkBox = convertView.findViewById(R.id.alertCheckbox);
+                holder.order = convertView.findViewById(R.id.alertOrderNo);
                 convertView.setTag(holder);
             } else {
                 holder = (ViewHolder) convertView.getTag();
             }
-            int background=R.color.white;
+            int background = R.color.white;
             if (colorseparation) {
                 final int backgroundColor = (position % 2 == 0) ? R.color.list_even : R.color.list_odd;
-                background=backgroundColor;
+                background = backgroundColor;
                 convertView.setBackgroundColor(ContextCompat.getColor(getContext(), backgroundColor));
             }
 
@@ -278,23 +287,36 @@ public class MultiSpinnerSearch extends AppCompatSpinner implements OnCancelList
             holder.textView.setText(data.getName());
             holder.textView.setTypeface(null, Typeface.NORMAL);
             holder.checkBox.setChecked(data.isSelected());
-
+            holder.order.setText(String.valueOf(data.selectionOrder));
+            holder.order.setVisibility(isOrder ? View.VISIBLE : View.INVISIBLE);
             convertView.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
                     if (data.isSelected()) { // deselect
-                        selected--;
+                        if(isOrder) {
+                            selected = 0;
+                            data.selectionOrder = 0;
+                            ListIterator<KeyPairBoolData> iterator = arrayList.listIterator();
+                            while (iterator.hasNext()) {
+                                KeyPairBoolData s = iterator.next();
+                                s.setSelected(false);
+                                iterator.set(s);
+                            }
+                        } else {
+                            selected --;
+                            data.selectionOrder = selected;
+                            data.setSelected(false);
+                        }
                     } else if (selected == limit) { // select with limit
                         if (limitListener != null)
                             limitListener.onLimitListener(data);
                         return;
                     } else { // selected
                         selected++;
+                        data.selectionOrder = selected;
+                        data.setSelected(true);
                     }
-
                     final ViewHolder temp = (ViewHolder) v.getTag();
                     temp.checkBox.setChecked(!temp.checkBox.isChecked());
-
-                    data.setSelected(!data.isSelected());
                     Log.i(TAG, "On Click Selected Item : " + data.getName() + " : " + data.isSelected());
                     notifyDataSetChanged();
                 }
@@ -306,6 +328,7 @@ public class MultiSpinnerSearch extends AppCompatSpinner implements OnCancelList
             } else {
                 holder.textView.setTypeface(null, Typeface.NORMAL);
                 holder.textView.setTextColor(Color.GRAY);
+                holder.order.setText("");
                 convertView.setBackgroundColor(ContextCompat.getColor(getContext(), background));
             }
             holder.checkBox.setTag(holder);
@@ -362,6 +385,12 @@ public class MultiSpinnerSearch extends AppCompatSpinner implements OnCancelList
                     return results;
                 }
             };
+        }
+
+        private class ViewHolder {
+            TextView textView;
+            CheckBox checkBox;
+            TextView order;
         }
     }
 }

@@ -5,6 +5,8 @@ public class KeyPairBoolData {
     long id;
     String name;
     boolean isSelected;
+    long selectionOrder;
+
 
     Object object;
 
